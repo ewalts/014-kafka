@@ -8,6 +8,7 @@
   gather_facts: false
   tasks:
     # New project keypair exists or create
+    # Requires php script in scripts write_key.php
     - name: import new key task key_pair
       import_tasks:
         file: tasks/key_pair.yml
