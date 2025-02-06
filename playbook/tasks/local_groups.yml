@@ -1,0 +1,13 @@
+    - name: Verify/create local groups
+      become: true
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - "{{ ssh_group }}"
+        - adm
+        - docker
+        - sudo
+
+
+

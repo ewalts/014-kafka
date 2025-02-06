@@ -1,0 +1,13 @@
+###> RWI-Tech.
+--- 
+- name: Generate a new key pair for AWS 
+  vars_files:
+    - vars/sec_vars.yml
+    - vars/deployment_vars.yml
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    # New project keypair exists or create
+    - name: import new key task key_pair
+      import_tasks:
+        file: tasks/key_pair.yml

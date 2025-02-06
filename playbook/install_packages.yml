@@ -1,0 +1,20 @@
+#######################################################>
+###>  Ubuntu basic settings
+#######################################################>
+- name: Initial server setup tasks
+  hosts: ec2hosts
+  gather_facts: false
+#  vars_prompt:
+#    - name: password
+#      prompt: Please provide creation password for "{{ my_user }}".
+  vars_files:
+    - vars/sec_vars.yml
+    - vars/deployment_vars.yml
+
+  tasks:
+    - name: Wait for SSH
+      import_tasks:
+        file: tests/ssh_response.yml
+    - name: Install packages
+      import_tasks:
+        file: tasks/package1.yml

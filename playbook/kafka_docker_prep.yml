@@ -1,0 +1,27 @@
+- name: Container image prep tasks - Apache Kafka
+  gather_facts: false
+  vars_files:
+    - vars/sec_vars.yml
+    - vars/deployment_vars.yml
+    - vars/docker_compose_vars.yml
+  remote_user: "{{ rem_user }}"
+  hosts: "{{ hosts }}"
+  tasks:
+    - name: Wait for SSH
+      import_tasks:
+        file: tests/ssh_response.yml
+
+    - name: Pull image
+      become: false
+      shell: |
+        docker pull bitnami/kafka:latest
+      ignore_errors: true
+      register: rslt
+    - debug:
+        msg: rslt
+
+    - name: Create Network
+      become: true
+      shell: |
+        docker network create app-tier --driver bridge
+ 

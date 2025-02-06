@@ -1,0 +1,42 @@
+#- name: Check for keypair
+#  amazon.aws.ec2_key_info:
+#    name: "{{ key_name }}"
+#  register: key_info
+#  ignore_errors: true
+#- debug:
+#    msg: "{{ key_info }}"
+- name: create keypair directory
+  become: true
+  shell: |
+    sudo mkdir -p "{{ key_dir }}"
+    sudo chown eric "{{ key_dir }}"
+
+- name: create a new EC2 key pair, returns generated private key
+  amazon.aws.ec2_key:
+    name: "{{ key_name }}"
+  register: key_pair
+#- debug:
+##msg: "!!!!!!!>>>[   {{ key_name }} ]--[ {{ pem_file }}   ]<<<!!!!!!!!!"
+
+- name: Write new key
+  become: true
+  shell: |
+    /usr/bin/php "{{ script_path }}/write_key.php" "{{ pem_file }}" "{{ key_pair.key.private_key }}"
+    chown eric "{{ pem_file }}"
+    chmod 0600 "{{ pem_file }}"
+  when: key_pair.changed  == true
+
+- name: Key file creation date/time
+  become: true
+  shell: |
+    sudo ls -l "{{ pem_file }}"
+  register: key_create_date
+- debug:
+    msg: "{{ key_create_date.stdout }}"
+
+- name: Update Inventory
+  replace:
+    path: "{{ dep_home }}/playbook/inventory/inventory.yml"
+    regexp: '^    ansible_ssh_private_key_file:(.*)'
+    replace: "    ansible_ssh_private_key_file: {{ pem_file }}"
+

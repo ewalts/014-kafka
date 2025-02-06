@@ -1,0 +1,59 @@
+- name: remove ufw
+  become: true
+  ansible.builtin.apt:
+    name: ufw
+    state: absent
+  ignore_errors: true
+
+- name: Iptables is installed
+  become: true
+  ansible.builtin.apt:
+    name: iptables
+    state: latest
+
+- name: Iptables-persistent is installed
+  become: true
+  ansible.builtin.apt:
+    name: iptables-persistent
+    state: latest
+
+- name: Iptables - Allow dns/ssh connections tcp
+  become: true
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    ctstate: NEW,ESTABLISHED,RELATED
+    source: "{{ ncom_net_cidr }}"
+    destination_ports: "{{ kafka_ports }}"
+    jump: ACCEPT
+    state: present
+
+- name: Iptables - Allow dns/ssh connections tcp
+  become: true
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    ctstate: NEW,ESTABLISHED,RELATED
+    source: "{{ my_ip }}"
+    destination_ports: "{{ kafka_ports }}"
+    jump: ACCEPT
+    state: present
+
+  ignore_errors: false
+- name: Insure directory /etc/iptables
+  become: true
+  shell: |
+    sudo mkdir /etc/iptables
+  ignore_errors: true
+
+- name: Insure the file exists
+  become: true
+  shell: |
+    sudo touch -a /etc/iptables/rules.v4
+  ignore_errors: true
+
+- name: Save
+  become: true
+  shell: |
+    sudo iptables-save > /etc/iptables/rules.v4
+    

@@ -1,0 +1,85 @@
+---
+- name: Kafka Docker
+  gather_facts: false
+  vars_files:
+    - vars/compose_vars.yml
+  hosts: "{{ hosts }}"
+  tasks:
+    - name: Wait for SSH
+      import_tasks:
+        file: tests/ssh_response.yml
+
+    - name: create web directory
+      become: true
+      file:
+        path: "{{ www_dir }}"
+        owner: www-data
+        state: directory
+        mode: 0777
+
+    - name: Create home/.docker directory
+      become: false
+      file:
+        path: "$HOME/.docker"
+        state: directory
+        mode: 0700
+
+    - name: Copy ECR credential
+      become: false
+      ansible.builtin.copy:
+        src: "{{ cred_src_dir }}/config.json"
+        dest: "$HOME/.docker/config.json"
+        owner: "{{ my_user }}"
+        mode: 0600
+
+#    - name: Pull image from ECR
+#      shell: |
+#        docker pull "{{ my_prebuild }}"
+#      register: result
+#    - debug:
+#        msg: "{{ result }}"
+
+    - name: Create kafka directory
+      become: true
+      file:
+        path: "{{ kafka_dir }}"
+        state: directory
+        owner: "{{ my_user }}"
+        mode: 0777
+
+    - name: Remove container
+      become: true
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        state: absent
+
+    - name: Copy Dockerfile
+      become: true
+      copy:
+        src: "{{ src_dir }}/Dockerfile"
+        dest: "{{ kafka_dir }}/build/Dockerfile"
+        owner: "{{ my_user }}"
+
+    - name: Copy docker-compose
+      become: true
+      ansible.builtin.copy:
+        src: "{{ src_dir }}/docker-compose.yml"
+        dest: "{{ kafka_dir }}/build/docker-compose.yml"
+        owner: "{{ my_user }}"
+
+    - name: Run docker compose
+      become: true
+      community.docker.docker_compose:
+        project_src: "{{ kafka_dir }}/build"
+        files:
+          - docker-compose.yml
+      register: output
+
+    - name: Verify that the web service is running
+      become: true
+      ansible.builtin.assert:
+        that:
+          - "output.services.web.kafka.state.running"
+      register: result
+    - debug:
+        msg: "{{ result }}"

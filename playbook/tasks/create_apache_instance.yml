@@ -1,0 +1,55 @@
+# EC2 instance access
+- name: AWS IAM Instance Profile - Create
+  ansible.builtin.command: aws iam create-instance-profile
+    --instance-profile-name "{{ apache_instance_profile }}-{{ time_stamp.stdout }}"
+  ignore_errors: true
+
+- name: Deployment Record Update Instance Profile
+  lineinfile:
+    state: present
+    create: true
+    path: "{{ deployment_log }}"
+    regexp: 'apache_profile:'
+    line: "apache_profile: {{ apache_instance_profile }}-{{ time_stamp.stdout }}"
+
+
+- name: AMI Instance exists/create
+  amazon.aws.ec2_instance:
+    name: "{{ apache_ins_name }}"
+    key_name: "{{ key_name }}"
+    iam_instance_profile: "{{ apache_profile }}"
+    vpc_subnet_id: "{{ subnet_id }}"
+    instance_type: "{{ web_ins_type }}"
+    security_groups:
+      - "{{ sg }}"
+    network:
+      assign_public_ip: true
+    image_id: "{{ ec2_apache_ami }}"
+    tags:
+      Name: "{{ inst_tags_name}}"
+      environment: "{{ new_env }}"
+      product: "{{ product_tag }}"
+      purpose: web-host
+  register: ec2
+
+- debug:
+    msg: "{{ ec2 }}"
+
+- name: Deployment Record Update Instance
+  lineinfile:
+    state: present
+    create: true
+    path: "{{ deployment_log }}"
+    regexp: 'apache_instance_id:'
+    line: "apache_instance_id: {{ ec2['instance_ids'][0] }}"
+
+- name: Register instance in ad-hoc groups
+  add_host:
+    hostname: "{{ ec2['instances'][0]['network_interfaces'][0]['association']['public_ip'] }}"
+    groups:
+      - ec2hosts
+      - apache
+      - jenkins
+      - web
+      - u22
+

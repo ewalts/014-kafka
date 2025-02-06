@@ -1,0 +1,28 @@
+    # EC2 instance access
+    - name: AWS IAM Instance Profile - Create
+      ansible.builtin.command: aws iam create-instance-profile
+        --instance-profile-name "{{ apache_instance_profile }}-{{ time_stamp.stdout }}"
+      ignore_errors: true
+
+    - name: Deployment Record Update Instance Profile
+      lineinfile:
+        state: present
+        create: true
+        path: "{{ deployment_log }}"
+        regexp: 'apache_profile:'
+        line: "apache_profile: {{ apache_instance_profile }}-{{ time_stamp.stdout }}"
+
+    # EC2 instance access
+    - name: AWS IAM Instance Profile - Create
+      ansible.builtin.command: aws iam create-instance-profile
+        --instance-profile-name "{{ mysql_instance_profile }}-{{ time_stamp.stdout }}"
+      ignore_errors: true
+
+    - name: Deployment Record Update Instance Profile
+      lineinfile:
+        state: present
+        create: true
+        path: "{{ deployment_log }}"
+        regexp: 'mysql_profile:'
+        line: "mysql_profile: {{ mysql_instance_profile }}-{{ time_stamp.stdout }}"
+
